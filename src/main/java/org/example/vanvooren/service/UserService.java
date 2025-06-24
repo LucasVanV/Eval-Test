@@ -50,18 +50,24 @@ public class UserService {
         return UserMapper.toDTO(savedUser);
     }
 
-    public UserDTO updateUser(Long id, UserDTO userDTO) {
+    public UserDTO updateUser(Long id, User user) {
+        Set<ConstraintViolation<User>> violations = validator.validate(user);
+        if (!violations.isEmpty()) {
+            throw new ConstraintViolationException(violations);
+        }
+
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new ObjectNotFoundException(User.class, "User with ID " + id + " not found"));
 
-        userRepository.findByEmail(userDTO.getEmail())
-                .filter(user -> !user.getId().equals(id))
-                .ifPresent(user -> {
-                    throw new DataIntegrityViolationException("Email already in use: " + userDTO.getEmail());
+        userRepository.findByEmail(user.getEmail())
+                .filter(userBdd -> !userBdd.getId().equals(id))
+                .ifPresent(userBdd -> {
+                    throw new DataIntegrityViolationException("Email already in use: " + user.getEmail());
                 });
 
-        existingUser.setName(userDTO.getName());
-        existingUser.setEmail(userDTO.getEmail());
+        existingUser.setName(user.getName());
+        existingUser.setEmail(user.getEmail());
+        existingUser.setPassword(user.getPassword());
 
         User updatedUser = userRepository.save(existingUser);
         return UserMapper.toDTO(updatedUser);

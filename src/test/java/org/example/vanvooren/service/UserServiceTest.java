@@ -201,20 +201,20 @@ public class UserServiceTest {
     @DisplayName("Mettre à jour un utilisateur existant avec succès")
     void testUpdateUser_Success() {
         User existingUser = new User(1L, "Old Name", "old@example.com", "pass");
-        UserDTO updateDTO = new UserDTO(null, "New Name", "new@example.com");
+        User update = new User(1L, "New Name", "new@example.com", "newpass");
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(existingUser));
-        when(userRepository.findByEmail(updateDTO.getEmail())).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(update.getEmail())).thenReturn(Optional.empty());
         when(userRepository.save(any(User.class))).thenReturn(existingUser);
 
-        UserDTO updatedUser = userService.updateUser(1L, updateDTO);
+        UserDTO updatedUser = userService.updateUser(1L, update);
 
         assertAll("Mettre à jour un utilisateur existant avec succès",
             () -> assertNotNull(updatedUser),
             () -> assertEquals("New Name", updatedUser.getName()),
             () -> assertEquals("new@example.com", updatedUser.getEmail()),
             () -> verify(userRepository, times(1)).findById(1L),
-            () -> verify(userRepository, times(1)).findByEmail(updateDTO.getEmail()),
+            () -> verify(userRepository, times(1)).findByEmail(update.getEmail()),
             () -> verify(userRepository, times(1)).save(existingUser)
         );
     }
@@ -223,16 +223,16 @@ public class UserServiceTest {
     @DisplayName("Échec mise à jour utilisateur si email déjà utilisé")
     void testUpdateUser_EmailAlreadyExists() {
         User existingUser = new User(1L, "Old Name", "old@example.com", "pass");
-        UserDTO updateDTO = new UserDTO(null, "New Name", "used@example.com");
+        User update = new User(1L, "New Name", "used@example.com", "newpass");
         User anotherUser = new User(2L, "Someone", "used@example.com", "pass2");
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(existingUser));
-        when(userRepository.findByEmail(updateDTO.getEmail())).thenReturn(Optional.of(anotherUser));
+        when(userRepository.findByEmail(update.getEmail())).thenReturn(Optional.of(anotherUser));
 
         assertAll("Échec mise à jour utilisateur si email déjà utilisé", 
-            () -> assertThrows(DataIntegrityViolationException.class, () -> userService.updateUser(1L, updateDTO)),
+            () -> assertThrows(DataIntegrityViolationException.class, () -> userService.updateUser(1L, update)),
             () -> verify(userRepository, times(1)).findById(1L),
-            () -> verify(userRepository, times(1)).findByEmail(updateDTO.getEmail()),
+            () -> verify(userRepository, times(1)).findByEmail(update.getEmail()),
             () -> verify(userRepository, never()).save(any(User.class))
         );
     }

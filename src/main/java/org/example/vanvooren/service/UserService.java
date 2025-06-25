@@ -5,24 +5,18 @@ import org.example.vanvooren.mapper.UserMapper;
 import org.example.vanvooren.model.User;
 import org.example.vanvooren.repository.UserRepository;
 import org.hibernate.ObjectNotFoundException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.ConstraintViolationException;
-import jakarta.validation.Validator;
+import lombok.RequiredArgsConstructor;
 
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class UserService {
-    @Autowired
-    private UserRepository userRepository;
-    @Autowired
-    private Validator validator;
+    private final UserRepository userRepository;
 
     public UserDTO getUserById(Long id) {
         User user = userRepository.findById(id)
@@ -41,20 +35,12 @@ public class UserService {
         if (userRepository.findByEmail(user.getEmail()).isPresent()) {
             throw new DataIntegrityViolationException("Email already in use: " + user.getEmail());
         }
-        Set<ConstraintViolation<User>> violations = validator.validate(user);
-        if (!violations.isEmpty()) {
-            throw new ConstraintViolationException(violations);
-        }
   
         User savedUser = userRepository.save(user);
         return UserMapper.toDTO(savedUser);
     }
 
     public UserDTO updateUser(Long id, User user) {
-        Set<ConstraintViolation<User>> violations = validator.validate(user);
-        if (!violations.isEmpty()) {
-            throw new ConstraintViolationException(violations);
-        }
 
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new ObjectNotFoundException(User.class, "User with ID " + id + " not found"));

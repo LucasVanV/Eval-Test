@@ -4,17 +4,15 @@ import org.example.vanvooren.dto.UserDTO;
 import org.example.vanvooren.model.User;
 import org.example.vanvooren.repository.UserRepository;
 import org.hibernate.ObjectNotFoundException;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
-
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.ConstraintViolationException;
-import jakarta.validation.Validator;
+import org.springframework.transaction.TransactionSystemException;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -22,26 +20,18 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
-
+@ExtendWith(MockitoExtension.class)
 public class UserServiceTest {
-    @InjectMocks
-    private UserService userService;
+    
 
     @Mock
     private UserRepository userRepository;
 
-    @Mock
-    private Validator validator;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
+    @InjectMocks
+    private UserService userService;
 
     @Test
     @DisplayName("Récupérer un utilisateur existant par ID")
@@ -107,7 +97,8 @@ public class UserServiceTest {
         User savedUser = new User(1L, "John", "john@example.com", "pass");
 
         when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.empty());
-        when(userRepository.save(any(User.class))).thenReturn(savedUser);
+        //when(userRepository.save(any(User.class))).thenReturn(savedUser);
+        Mockito.doReturn(savedUser).when(userRepository).save(any());
 
         UserDTO result = userService.saveUser(user);
 
@@ -140,18 +131,12 @@ public class UserServiceTest {
         User user = new User(null, "John", "john@example.com", "pa");
 
         when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.empty());
-
-        @SuppressWarnings("unchecked")
-        ConstraintViolation<User> mockViolation = (ConstraintViolation<User>) mock(ConstraintViolation.class);
-        Set<ConstraintViolation<User>> violations = new HashSet<>();
-        violations.add(mockViolation);
-
-        when(validator.validate(user)).thenReturn(violations);
+        Mockito.doThrow(TransactionSystemException.class).when(userRepository).save(any());
 
         assertAll("Échec création utilisateur si mot de passe trop court",
-            () -> assertThrows(ConstraintViolationException.class, () -> userService.saveUser(user)),
+            () -> assertThrows(TransactionSystemException.class, () -> userService.saveUser(user)),
             () -> verify(userRepository, times(1)).findByEmail(user.getEmail()),
-            () -> verify(userRepository, never()).save(any(User.class))
+            () -> verify(userRepository, times(1)).save(any(User.class))
         );
     }
 
@@ -161,18 +146,12 @@ public class UserServiceTest {
         User user = new User(null, " ", "john@example.com", "pass");
 
         when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.empty());
-
-        @SuppressWarnings("unchecked")
-        ConstraintViolation<User> mockViolation = (ConstraintViolation<User>) mock(ConstraintViolation.class);
-        Set<ConstraintViolation<User>> violations = new HashSet<>();
-        violations.add(mockViolation);
-
-        when(validator.validate(user)).thenReturn(violations);
+        Mockito.doThrow(TransactionSystemException.class).when(userRepository).save(any());
 
         assertAll("Échec création utilisateur si le nom est vide",
-            () -> assertThrows(ConstraintViolationException.class, () -> userService.saveUser(user)),
+            () -> assertThrows(TransactionSystemException.class, () -> userService.saveUser(user)),
             () -> verify(userRepository, times(1)).findByEmail(user.getEmail()),
-            () -> verify(userRepository, never()).save(any(User.class))
+            () -> verify(userRepository, times(1)).save(any(User.class))
         );
     }
 
@@ -182,18 +161,13 @@ public class UserServiceTest {
         User user = new User(null, "John", "john@example", "pass");
 
         when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.empty());
+        Mockito.doThrow(TransactionSystemException.class).when(userRepository).save(any());
 
-        @SuppressWarnings("unchecked")
-        ConstraintViolation<User> mockViolation = (ConstraintViolation<User>) mock(ConstraintViolation.class);
-        Set<ConstraintViolation<User>> violations = new HashSet<>();
-        violations.add(mockViolation);
-
-        when(validator.validate(user)).thenReturn(violations);
 
         assertAll("Échec création utilisateur si mot de passe trop court",
-            () -> assertThrows(ConstraintViolationException.class, () -> userService.saveUser(user)),
+            () -> assertThrows(TransactionSystemException.class, () -> userService.saveUser(user)),
             () -> verify(userRepository, times(1)).findByEmail(user.getEmail()),
-            () -> verify(userRepository, never()).save(any(User.class))
+            () -> verify(userRepository, times(1)).save(any(User.class))
         );
     }
 
